@@ -63,6 +63,18 @@ public class FTexturePlatformData
         VTData = null;
     }
 
+    public FTexturePlatformData(int sizeX, int sizeY, EPixelFormat pixelFormat, Lazy<byte[]?> mipData)
+    {
+        SizeX = sizeX;
+        SizeY = sizeY;
+        PackedData = 1;
+        PixelFormat = pixelFormat.ToString();
+        OptData = default;
+        FirstMipToSerialize = 0;
+        Mips = [new FTexture2DMipMap(new FByteArrayData(mipData), sizeX, sizeY, 1)];
+        VTData = null;
+    }
+
     public FTexturePlatformData(FAssetArchive Ar, UTexture Owner, bool bSerializeMipData = true)
     {
         const long PlaceholderDerivedDataSize = 16;

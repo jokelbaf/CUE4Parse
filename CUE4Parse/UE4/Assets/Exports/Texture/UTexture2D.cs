@@ -60,7 +60,18 @@ public class UTexture2D : UTexture
 
             if (Ar.Position >= validPos) return;
 
-            DeserializeCookedPlatformData(Ar, bSerializeMipData);
+            try
+            {
+                DeserializeCookedPlatformData(Ar, bSerializeMipData);
+            }
+            catch when (Ar.Game == GAME_WutheringWaves && TryLoadOodleTexture())
+            {
+                Ar.Position = validPos;
+                return;
+            }
+
+            if (Ar.Game == GAME_WutheringWaves)
+                TryLoadOodleTexture();
         }
     }
 }

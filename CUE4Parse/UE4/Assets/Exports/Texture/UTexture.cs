@@ -104,15 +104,16 @@ public abstract class UTexture : UUnrealMaterial, IAssetUserData
 
     protected void DeserializeCookedPlatformData(FAssetArchive Ar, bool bSerializeMipData = true)
     {
-        var pixelFormatName = Ar.ReadFName();
-        if (pixelFormatName.Text == "PF_BC6H_Signed") pixelFormatName = "PF_BC6H";
+        var pixelFormatName = ReadCookedPixelFormatName(Ar);
         while (!pixelFormatName.IsNone)
         {
-            if (!Enum.TryParse(pixelFormatName.Text, ignoreCase: true, out EPixelFormat pixelFormat))
+            var pixelFormatText = NormalizeCookedPixelFormat(Ar.Game, pixelFormatName.Text);
+            if (!Enum.TryParse(pixelFormatText, ignoreCase: true, out EPixelFormat pixelFormat))
                 Log.Warning("Failed to parse pixel format: {PixelFormat}", pixelFormatName.Text);
 
             var skipOffset = Ar.Game switch
             {
+                GAME_WutheringWaves => Ar.AbsolutePosition + Ar.Read<long>(),
                 >= GAME_UE5_0 => Ar.AbsolutePosition + Ar.Read<long>(),
                 >= GAME_UE4_20 => Ar.Read<long>(),
                 _ => Ar.Read<int>()
@@ -144,8 +145,73 @@ public abstract class UTexture : UUnrealMaterial, IAssetUserData
                 Ar.SeekAbsolute(skipOffset, SeekOrigin.Begin);
             }
 
-            pixelFormatName = Ar.ReadFName();
+            pixelFormatName = ReadCookedPixelFormatName(Ar);
         }
+    }
+
+    private static FName ReadCookedPixelFormatName(FAssetArchive Ar)
+    {
+        if (Ar.Game != GAME_WutheringWaves)
+            return Ar.ReadFName();
+
+        var position = Ar.Position;
+        if (TryReadCookedPixelFormatName(Ar, out var pixelFormatName))
+            return pixelFormatName;
+
+        Ar.Position = position + sizeof(int);
+        if (TryReadCookedPixelFormatName(Ar, out pixelFormatName))
+            return pixelFormatName;
+
+        Ar.Position = position;
+        return Ar.ReadFName();
+    }
+
+    private static bool TryReadCookedPixelFormatName(FAssetArchive Ar, out FName pixelFormatName)
+    {
+        var position = Ar.Position;
+        if (Ar.TestReadFName())
+        {
+            var candidate = Ar.ReadFName();
+            if (candidate.IsNone || Enum.TryParse<EPixelFormat>(NormalizeCookedPixelFormat(Ar.Game, candidate.Text), out _))
+            {
+                pixelFormatName = candidate;
+                return true;
+            }
+        }
+
+        Ar.Position = position;
+        pixelFormatName = default;
+        return false;
+    }
+
+    private static string NormalizeCookedPixelFormat(EGame game, string pixelFormatName)
+    {
+        if (game == GAME_WutheringWaves && pixelFormatName.StartsWith("OODLE_", StringComparison.Ordinal))
+            pixelFormatName = pixelFormatName["OODLE_".Length..];
+
+        if (pixelFormatName == "PF_BC6H_Signed")
+            return "PF_BC6H";
+
+        if (!pixelFormatName.StartsWith("PF_", StringComparison.Ordinal) &&
+            Enum.TryParse<EPixelFormat>($"PF_{pixelFormatName}", out _))
+        {
+            return $"PF_{pixelFormatName}";
+        }
+
+        return pixelFormatName;
+    }
+
+    protected bool TryLoadOodleTexture()
+    {
+        if (MipDataProvider is not UOodleTextureStorageProviderFactory provider ||
+            !provider.TryCreatePlatformData(out var platformData))
+        {
+            return false;
+        }
+
+        PlatformData = platformData;
+        Format = EPixelFormat.PF_BC7;
+        return true;
     }
 
     protected internal override void WriteJson(JsonWriter writer, JsonSerializer serializer)

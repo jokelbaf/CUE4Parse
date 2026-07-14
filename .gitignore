@@ -399,3 +399,6 @@ FodyWeavers.xsd
 *.idea
 
 build
+
+# Local reference clones
+references/

@@ -17,7 +17,7 @@ namespace CUE4Parse_Conversion.Textures;
 
 public static class TextureDecoder
 {
-    public static bool UseAssetRipperTextureDecoder { get; set; } = false;
+    public static bool UseAssetRipperTextureDecoder { get; set; } = !OperatingSystem.IsWindows();
 
     public static CTexture? Decode(this UTexture texture, int maxMipSize, ETexturePlatform platform = ETexturePlatform.DesktopMobile) => texture.DecodeMip(texture.GetMipIndexByMaxSize(maxMipSize), platform);
     public static CTexture? Decode(this UTexture texture, ETexturePlatform platform = ETexturePlatform.DesktopMobile) => texture.DecodeMip(texture.GetFirstMipIndex(), platform);
