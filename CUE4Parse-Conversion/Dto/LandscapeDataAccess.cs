@@ -8,7 +8,7 @@ using CUE4Parse.UE4.Readers;
 
 namespace CUE4Parse_Conversion.Dto;
 
-internal class FLandscapeComponentDataInterface {
+public class FLandscapeComponentDataInterface {
     // offset of this component's data into heightmap texture
     public readonly ULandscapeComponent Component;
     private readonly bool bWorkOnEditingLayer;
@@ -30,7 +30,7 @@ internal class FLandscapeComponentDataInterface {
 
     private bool _bEnsuredWeightmapTexCache;
 
-    internal unsafe FLandscapeComponentDataInterface(ULandscapeComponent inComponent, int inMipLevel)
+    public unsafe FLandscapeComponentDataInterface(ULandscapeComponent inComponent, int inMipLevel)
     {
         Component = inComponent;
         HeightMipData = null;
@@ -221,7 +221,7 @@ internal class FLandscapeComponentDataInterface {
             texelX + HeightmapComponentOffsetX + (texelY + HeightmapComponentOffsetY) * HeightmapStride];
     }
 
-    internal byte GetLayerWeight(int localX, int localY,
+    public byte GetLayerWeight(int localX, int localY,
         FWeightmapLayerAllocationInfo? /*ULandscapeLayerInfoObject*/ allocationInfo) {
         if (GetWeightMapIndex(allocationInfo, out var LayerIdx)) {
             return GetLayerWeight(localX, localY, LayerIdx);
@@ -295,7 +295,7 @@ internal class FLandscapeComponentDataInterface {
         }
     }
 
-    internal void VertexIndexToXY(int vertexIndex, out int outX, out int outY) {
+    public void VertexIndexToXY(int vertexIndex, out int outX, out int outY) {
 #if true //LANDSCAPE_VALIDATE_DATA_ACCESS
         Debug.Assert(MipLevel == 0);
 #endif
@@ -314,11 +314,11 @@ internal class FLandscapeComponentDataInterface {
         // return (ushort)((texel->R << 8) + texel->G);
     }
 
-    internal void XYtoVertexIndex(int vertX, int vertY, out int outVertexIndex) {
+    public void XYtoVertexIndex(int vertX, int vertY, out int outVertexIndex) {
         outVertexIndex = vertY * ComponentSizeVerts + vertX;
     }
 
-    internal FVector GetLocalVertex(int localX, int localY) {
+    public FVector GetLocalVertex(int localX, int localY) {
         var scaleFactor = (float)Component.ComponentSizeQuads / (float)(ComponentSizeVerts - 1);
         GetXYOffset(localX, localY, out float xOffset, out float yOffset);
         return new FVector(localX * scaleFactor + xOffset, localY * scaleFactor + yOffset,
@@ -326,7 +326,7 @@ internal class FLandscapeComponentDataInterface {
     }
 
     // same as GetLocalVertex but without the GetLocalHeight
-    internal FVector GetVertex(int localX, int localY) {
+    public FVector GetVertex(int localX, int localY) {
         var scaleFactor = (float)Component.ComponentSizeQuads / (float)(ComponentSizeVerts - 1);
         GetXYOffset(localX, localY, out float xOffset, out float yOffset);
         return new FVector(localX * scaleFactor + xOffset, localY * scaleFactor + yOffset, GetHeight(localX, localY));
@@ -376,7 +376,7 @@ internal class FLandscapeComponentDataInterface {
         localTangentY = new FVector(0.0f, localTangentZ.Z, -localTangentZ.Y);
     }
 
-    internal void GetLocalTangentVectors(int vertexIndex, out FVector4 localTangentX, out FVector localTangentY,
+    public void GetLocalTangentVectors(int vertexIndex, out FVector4 localTangentX, out FVector localTangentY,
         out FVector localTangentZ) {
         VertexIndexToXY(vertexIndex, out var x, out var y);
         GetLocalTangentVectors(x, y, out localTangentX, out localTangentY, out localTangentZ);
