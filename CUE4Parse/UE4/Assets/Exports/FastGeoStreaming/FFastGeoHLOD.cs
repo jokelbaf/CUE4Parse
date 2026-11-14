@@ -19,6 +19,6 @@ public class FFastGeoHLOD : FFastGeoComponentCluster
         bRequireWarmup = Ar.ReadBoolean();
         SourceCellGuid = Ar.Read<FGuid>();
         StandaloneHLODGuid = Ar.Read<FGuid>();
-        if (Ar.Game is >= GAME_UE5_7) CustomHLODGuid = Ar.Read<FGuid>();
+        if (Ar.Game is >= GAME_UE5_7 or GAME_NevernessToEverness) CustomHLODGuid = Ar.Read<FGuid>();
     }
 }

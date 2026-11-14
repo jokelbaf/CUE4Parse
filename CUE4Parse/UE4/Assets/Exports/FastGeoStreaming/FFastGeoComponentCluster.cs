@@ -1,3 +1,5 @@
+using CUE4Parse.UE4.Exceptions;
+
 namespace CUE4Parse.UE4.Assets.Exports.FastGeoStreaming;
 
 public class FFastGeoComponentCluster
@@ -27,6 +29,11 @@ public class FFastGeoComponentCluster
         }
         SkinnedMeshComponents = Ar.ReadArray(() => new FFastGeoSkinnedMeshComponent(Ar));
         InstancedSkinnedMeshComponents = Ar.ReadArray(() => new FFastGeoInstancedSkinnedMeshComponent(Ar));
+        if (Ar.Game is GAME_NevernessToEverness)
+        {
+            var nteComponentCount = Ar.Read<int>();
+            if (nteComponentCount != 0) throw new ParserException(Ar, $"Unsupported NTE FastGeo component array with {nteComponentCount} entries");
+        }
         ProceduralISMComponents = Ar.Game >= GAME_UE5_7 ? Ar.ReadArray(() => new FFastGeoProceduralISMComponent(Ar)) : [];
 
         if (Ar.Game is GAME_PhantomBladeZero) DecalComponents = Ar.ReadArray(() => new FFastGeoDecalComponent(Ar));

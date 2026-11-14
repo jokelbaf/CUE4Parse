@@ -21,6 +21,10 @@ public class FFastGeoPrimitiveComponent : FFastGeoComponent
     public FStructFallback? BodyInstance;
     public FSceneProxyDesc SceneProxyDesc;
     public object? CustomGameData;
+    public FName ActorClassPackage;
+    public FName ActorClass;
+    public FName[] ActorTags = [];
+    public FName[] ComponentTags = [];
 
     public FFastGeoPrimitiveComponent(FFastGeoArchive Ar) : base(Ar)
     {
@@ -62,6 +66,13 @@ public class FFastGeoPrimitiveComponent : FFastGeoComponent
         bHasCustomNavigableGeometry = Ar.Read<EHasCustomNavigableGeometry>();
         RuntimeVirtualTextures = Ar.ReadArray(Ar.ReadFPackageIndex);
         BodyInstance = Ar.Game < GAME_UE5_8 && Ar.Game is not GAME_GearsofWarEDay? new FStructFallback(Ar, "BodyInstance") : null;
+        if (Ar.Game is GAME_NevernessToEverness)
+        {
+            ActorClassPackage = Ar.ReadFName();
+            ActorClass = Ar.ReadFName();
+            ActorTags = Ar.ReadArray(Ar.ReadFName);
+            ComponentTags = Ar.ReadArray(Ar.ReadFName);
+        }
         SceneProxyDesc = new FSceneProxyDesc(Ar);
         if (Ar.Game is GAME_GearsofWarEDay) Ar.Position += 41;
         if (Ar.Game is GAME_Splitgate2) Ar.Position += 4;
