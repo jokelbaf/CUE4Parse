@@ -54,7 +54,7 @@ public class FPrimitiveSceneProxyDesc(FArchive Ar)
     public bool bVisibleInReflectionCaptures = Ar.ReadBoolean();
     public bool bVisibleInRealTimeSkyCaptures = Ar.ReadBoolean();
     public bool bVisibleInRayTracing = Ar.ReadBoolean();
-    public bool bVisibleInReflections = Ar.Game >= GAME_UE5_8 || Ar.Game is GAME_PhantomBladeZero or GAME_NevernessToEverness && Ar.ReadBoolean();
+    private readonly bool _visibleInReflectionsAfterRayTracing = Ar.Game >= GAME_UE5_8 || Ar.Game is GAME_PhantomBladeZero && Ar.ReadBoolean();
     public bool bRenderInDepthPass = Ar.ReadBoolean();
     public bool bRenderInMainPass = Ar.ReadBoolean();
     public bool bTreatAsBackgroundForOcclusion = Ar.ReadBoolean();
@@ -66,6 +66,7 @@ public class FPrimitiveSceneProxyDesc(FArchive Ar)
     public bool bAffectDistanceFieldLighting = Ar.ReadBoolean();
     public bool bCastVolumetricTranslucentShadow = Ar.ReadBoolean();
     public bool bCastContactShadow = Ar.ReadBoolean();
+    private readonly bool _visibleInReflectionsAfterContactShadow = Ar.Game is GAME_NevernessToEverness && Ar.ReadBoolean();
     public bool bCastHiddenShadow = Ar.ReadBoolean();
     public bool bCastShadowAsTwoSided = Ar.ReadBoolean();
     public bool bSelfShadowOnly = Ar.ReadBoolean();
@@ -115,6 +116,8 @@ public class FPrimitiveSceneProxyDesc(FArchive Ar)
     public int RayTracingGroupId = Ar.Read<int>();
     public ERuntimeVirtualTextureMainPassType VirtualTextureRenderPassType = Ar.Read<ERuntimeVirtualTextureMainPassType>();
     public float VirtualTextureMainPassMaxDrawDistance = Ar.Read<float>();
+
+    public bool bVisibleInReflections => _visibleInReflectionsAfterRayTracing || _visibleInReflectionsAfterContactShadow;
 }
 
 public class FSkinnedMeshSceneProxyDesc(FFastGeoArchive Ar)// : FPrimitiveSceneProxyDesc
