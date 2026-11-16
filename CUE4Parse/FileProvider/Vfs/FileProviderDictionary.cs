@@ -15,6 +15,9 @@ namespace CUE4Parse.FileProvider.Vfs
         private ConcurrentDictionary<FPackageId, GameFile>? _byId;
         private ConcurrentDictionary<FPackageId, GameFile>? _optionalById;
         private int _count;
+        private readonly Lock _packageIndexLock = new();
+        private readonly Dictionary<FPackageId, long> _packageReadOrders = [];
+        private readonly Dictionary<FPackageId, long> _optionalPackageReadOrders = [];
         public IReadOnlyDictionary<FPackageId, GameFile> ById => GetPackageIndex();
         public IReadOnlyDictionary<FPackageId, GameFile> OptionalById => GetOptionalSegmentPackageIndex();
 
@@ -139,7 +142,7 @@ namespace CUE4Parse.FileProvider.Vfs
                     // only load the normal package in this dict for later use by IoPackage.ImportedPackages
                     if (file is FIoStoreEntry { IsPackageData: true, IsOptionalPackage: false } ioEntry)
                     {
-                        (packageIndex ??= GetPackageIndex())[ioEntry.ChunkId.AsPackageId()] = file;
+                        IndexPackage(packageIndex ??= GetPackageIndex(), _packageReadOrders, ioEntry.ChunkId.AsPackageId(), file, readOrder);
                     }
                 }
             }
@@ -147,7 +150,7 @@ namespace CUE4Parse.FileProvider.Vfs
             {
                 var packageIndex = GetPackageIndex();
                 foreach (var (packageId, file) in packageFiles)
-                    packageIndex[packageId] = file;
+                    IndexPackage(packageIndex, _packageReadOrders, packageId, file, readOrder);
             }
 
             _indicesBag.Add(new KeyValuePair<long, IReadOnlyDictionary<string, GameFile>>(readOrder, newFiles));
@@ -157,7 +160,21 @@ namespace CUE4Parse.FileProvider.Vfs
             {
                 var optionalSegmentIndex = GetOptionalSegmentPackageIndex();
                 foreach (var (packageId, file) in optionalSegmentPackageFiles)
-                    optionalSegmentIndex[packageId] = file;
+                    IndexPackage(optionalSegmentIndex, _optionalPackageReadOrders, packageId, file, readOrder);
+            }
+        }
+
+        // a package id is indexed from the archive with the highest read order, as paths are,
+        // so imports resolve to the same (patched) package as a lookup by path
+        private void IndexPackage(ConcurrentDictionary<FPackageId, GameFile> index, Dictionary<FPackageId, long> readOrders, FPackageId packageId, GameFile file, long readOrder)
+        {
+            lock (_packageIndexLock)
+            {
+                if (readOrders.TryGetValue(packageId, out var existing) && existing > readOrder)
+                    return;
+
+                readOrders[packageId] = readOrder;
+                index[packageId] = file;
             }
         }
 
@@ -176,6 +193,11 @@ namespace CUE4Parse.FileProvider.Vfs
             _indicesBag.Clear();
             Volatile.Read(ref _byId)?.Clear();
             Volatile.Read(ref _optionalById)?.Clear();
+            lock (_packageIndexLock)
+            {
+                _packageReadOrders.Clear();
+                _optionalPackageReadOrders.Clear();
+            }
             Interlocked.Exchange(ref _count, 0);
         }
 
